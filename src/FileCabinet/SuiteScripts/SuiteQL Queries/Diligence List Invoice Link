@@ -1,0 +1,5 @@
+select '<a target="_blank" href="/app/accounting/transactions/custinvc.nl?id='||t.id||'">'||t.custbody_heir_first_name||' '||t.custbody_heir_last_name||' - '||t.tranid||' ('||(select sum(rate) from transactionline where transaction = t.id)||')</a>' as Invoices
+
+from transaction t
+--join transactionline tl on tl.transaction=t.id
+where type='CustInvc' and custbody_invoice_estate=2051402

@@ -1,0 +1,8 @@
+select a.attendee as custid, e.entitytitle as custname, max(c.startdate) as eventdate
+from calendarevent c
+join attendee a on a.calendarevent = c.id
+join entity e on e.id=a.attendee
+where a.attendee not in (SELECT id FROM employee)
+  and a.attendee in (select entity from transaction where type='CustInvc' and status='A' group by entity order by entity)
+group by a.attendee, e.entitytitle
+having max(c.startdate) <= sysdate-1
