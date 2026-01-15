@@ -279,13 +279,17 @@ define(['N/record', 'N/search', 'N/query'], function(record, search, query){
     var data=[];
     data[0]=rows[0].innerText.split(/\n\t\n/);
     for(var i=2; i<rows.length; i+=2) {
-      data.push(rows[i].innerText.split(/\t/));
+      try {
+        data.push(rows[i].innerText.split(/\t/));
+      } catch(e) {
+        log.debug('.');
+      }
     }
     return data;
   }
 
   function csvexport(sublistId, filename="CSV Export Results (PLEASE RENAME) ", mapfunction) {
-    alert(`sublistId:${sublistId}, filename:${filename}, mapfunction:${mapfunction}`);
+//    alert(`sublistId:${sublistId}, filename:${filename}, mapfunction:${mapfunction}`);
     var data=getcsvdata(sublistId);
     var xmlstring='';
     for(var i=0; i<data.length; i++) {
@@ -419,8 +423,172 @@ define(['N/record', 'N/search', 'N/query'], function(record, search, query){
     }[statename.toLowerCase()];
   }
 
+  var netrevenuetemplate= '`invoicetotal(${fn(val.invoicetotal)})\n - invoicedue(${fn(val.invoicedue)})\n - cashadvanced(${fn(val.cashadvanced)})\n - discounttotal(${fn(val.discounttotal)})\n - checkstotal(${fn(val.checkstotal)})\n + rebatetotal(${fn(val.rebatetotal)})\n - baddebttotal(${fn(val.baddebttotal)})\n - completedassignmentstotal(${fn(val.completedassignmentstotal)})\n + recoveryonwriteofftotal(${fn(val.recoveryonwriteofftotal)})\n + recoveredattyfeestotal(${fn(val.recoveredattyfeestotal)})\n + courtfeestotal(${fn(val.courtfeestotal)})\n - additionaldepositstotal(${fn(val.additionaldepositstotal)})\n = netrevenue2(${fn(val.netrevenue2)})`';
+
+  function calc(val,option) {
+    var retval='';
+    var template1 = netrevenuetemplate;
+    var template2 = template1.replace(/\)}\)\n /g,'})').replace(/ .*?fn\(/g,'(${').replace(/`.+?fn\(/,'`(${').replace(/=.*`/,'`');
+    var template3 = template2.replace(/[`()${}]/g,'').replace(/val\./g,'').replace(/([-+])/g,' $1 ');
+    if(option==0) {
+      retval=Math.round(100*eval(eval(template2)), 2)/100;
+    }
+    if(option==1) {
+      retval=eval(template1);
+    }
+    if(option==2)
+      retval=template3;
+    return retval;
+  }
+
+  function fn(number) {
+    return '$ '+number.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }
+
+  function addField2(params, fields) {
+    if (!params.form || !params.id || !params.label || !params.type) {
+      throw new Error('addField: form, id, label, and type are required');
+    }
+
+    var form = params.form;
+    var fieldId = params.id;
+    var label = params.label;
+    var type = params.type.toLowerCase();
+    var sublistId = params.sublistId;
+    var field;
+
+    // Map common aliases → official serverWidget constants
+    var typeMap = {
+      // 'text'        : sw.FieldType.TEXT,
+      // 'textarea'    : sw.FieldType.TEXTAREA,
+      // 'checkbox'    : sw.FieldType.CHECKBOX,
+      // 'date'        : sw.FieldType.DATE,
+      // 'datetime'    : sw.FieldType.DATETIMETZ,
+      // 'currency'    : sw.FieldType.CURRENCY,
+      // 'decimal'     : sw.FieldType.FLOAT,
+      // 'integer'     : sw.FieldType.INTEGER,
+      // 'select'      : sw.FieldType.SELECT,
+      // 'multiselect' : sw.FieldType.MULTISELECT,
+      // 'url'         : sw.FieldType.URL,
+      // 'email'       : sw.FieldType.EMAIL,
+      // 'phone'       : sw.FieldType.PHONE,
+      // 'inline'      : sw.FieldType.INLINEHTML,
+      // 'help'        : sw.FieldType.HELP,
+      // 'label'       : sw.FieldType.LABEL,
+      // 'radio'       : sw.FieldType.RADIO,
+      // 'file'        : sw.FieldType.FILE
+       'text'        : 'text',
+       'textarea'    : 'textarea',
+       'checkbox'    : 'checkbox',
+       'date'        : 'date',
+       'datetime'    : 'datetimetz',
+       'currency'    : 'currency',
+       'decimal'     : 'float',
+       'integer'     : 'integer',
+       'select'      : 'select',
+       'multiselect' : 'multiselect',
+       'url'         : 'url',
+       'email'       : 'email',
+       'phone'       : 'phone',
+       'inline'      : 'inline',
+       'help'        : 'help',
+       'label'       : 'label',
+       'radio'       : 'radio',
+       'file'        : 'file'
+    };
+
+    var fieldType = typeMap[type] || type; // fallback if already a constant
+
+    if (sublistId) {
+      var sublist = form.getSublist({id: sublistId});
+      if (!sublist) {
+        throw new Error('Invalid sublistId: ' + sublistId);
+      }
+      field = sublist.addField({
+        id: fieldId,
+        label: label,
+        type: fieldType
+      });
+      if (params.tab) {
+        field.updateTab({tab: params.tab});
+      }
+    } else {
+      field = form.addField({
+        id: fieldId,
+        label: label,
+        type: fieldType,
+        source: params.source || null,
+        container: params.container || params.tab || null
+      });
+    }
+
+    if (params.defaultValue !== undefined && params.defaultValue !== null) {
+      field.defaultValue = params.defaultValue;
+    }
+    if (params.mandatory) {
+      field.isMandatory = true;
+    }
+    if (params.displayType) {
+      var dt = params.displayType.toLowerCase();
+      if (dt === 'readonly') dt = 'disabled';
+//      field.updateDisplayType({displayType: sw.FieldDisplayType[dt.toUpperCase()] || sw.FieldDisplayType.NORMAL});
+      field.updateDisplayType({displayType: dt || 'normal'});
+    }
+    if (params.layoutType) {
+      field.updateLayoutType({layoutType: params.layoutType});
+    }
+    if (params.breakType) {
+      field.updateBreakType({breakType: params.breakType});
+    }
+    if (params.helpText) {
+      field.setHelpText({help: params.helpText});
+    }
+    if (params.maxLength && (type === 'text' || type === 'textarea')) {
+      field.maxLength = params.maxLength;
+    }
+
+    if (type === 'url') {
+      field.linkText = label;
+      if (params.openNewWindow !== false) {
+        field.openInNewWindow = true;
+      }
+    }
+
+    if (type === 'select' || type === 'multiselect') {
+      if (params.source) {
+        field.addSelectOption({value: '', text: ' '}); // optional blank
+      }
+    }
+
+    if (type === 'checkbox' && params.defaultChecked === true) {
+      field.defaultValue = true;
+    }
+
+    if (typeof (fields) == 'object') {
+      var container = params.sublistId || 'body';
+      var temp = {id: params.id, label: params.label};
+      if (!fields.hasOwnProperty(container)) {
+        fields[container] = [];
+      }
+      fields[container].push(temp);
+    }
+
+    return field;
+  }
+
+  function toTitleCase(str) {
+    return str.toLowerCase().replace(/(?:^|\s)\w/g, function(match) {
+      return match.toUpperCase();
+    });
+  }
+
+
+
+
 
   return {
+    addField2:addField2,
+    toTitleCase:toTitleCase,
     getcsvdata:getcsvdata,
     csvexport:csvexport,
     doSearch:doSearch,
@@ -435,6 +603,8 @@ define(['N/record', 'N/search', 'N/query'], function(record, search, query){
     unflatten:unflatten,
     arrayToObject:arrayToObject,
     stateToAbbrev:stateToAbbrev,
+    netrevenuecalc:calc,
+    formatnumber:fn,
   };
 });
 
