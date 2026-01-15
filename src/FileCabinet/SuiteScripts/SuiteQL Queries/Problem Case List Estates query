@@ -1,0 +1,46 @@
+select e.id as estintid
+        , null as priority
+        , e.entityid as estid
+        , e.altname as estname
+        , BUILTIN.DF(e.custentity_pm_assignee) as pmassignee
+        , '<a target="_blank" href="/app/common/entity/custjob.nl?id='||e.id||'"><p id="'||e.id||'">view</p></a>' as estlink
+        , sum(tl.rate) as invoices
+        , null as defaultonexpected
+        , null as defaultonadvance
+        , f.id as flagnoteintid
+        , f.startdate as flagnotedate
+        , f.message as flagnotemsg
+        , sq.id as lastnoteintid
+        , sq.startdate as lastnotedate
+        , sq.message as lastnotemsg
+        from transaction t 
+        join transactionline tl on tl.transaction=t.id
+        join customer c on c.id=t.entity
+        join customer e on e.id=c.parent
+        left outer join phonecall f on f.id=e.custentity_pcl_flag_note
+        left outer join (
+          select *
+          from (
+            select t.id
+            , t.company
+            , t.startdate
+            , t.message
+            , row_number() over(partition by company order by startdate desc) rn from phonecall t
+            ) t
+          where rn = 1
+        ) sq on sq.company=e.id
+        where e.custentity_problem_case='T'
+          and BUILTIN.DF(t.status)='Invoice : Open' 
+          and t.type='CustInvc'
+        group by e.id
+        , e.entityid
+        , e.altname
+        , BUILTIN.DF(e.custentity_pm_assignee)
+        , e.custentity_pcl_priority
+        , f.id
+        , f.startdate
+        , f.message
+        , sq.id
+        , sq.startdate
+        , sq.message
+        order by e.id

@@ -1,0 +1,31 @@
+--select * from contact where id=448923
+--select * from contactaddressbook where entity=448923
+
+/*
+SELECT
+customer.id,
+customer.companyname,
+customeraddressbook.addressbookaddress,
+customeraddressbook.label,
+customeraddressbookentityaddress.nkey,
+customeraddressbookentityaddress.addr1
+FROM customer
+LEFT OUTER JOIN customeraddressbook on (customer.id = customeraddressbook.entity)
+LEFT OUTER JOIN customeraddressbookentityaddress ON (customeraddressbook.addressbookaddress = customerAddressbookEntityAddress.nkey)
+*/
+
+SELECT 
+    contact.id,
+    contact.firstname,
+    contact.lastname,
+    contactaddressbook.internalid AS addressbook_id,
+    contactaddressbookentityaddress.addr1,
+    contactaddressbookentityaddress.addr2,
+    contactaddressbookentityaddress.city,
+    contactaddressbookentityaddress.state,
+    contactaddressbookentityaddress.zip,
+    contactaddressbookentityaddress.country
+FROM contact
+LEFT OUTER JOIN contactaddressbook ON (contact.id = contactaddressbook.entity)
+LEFT OUTER JOIN contactaddressbookentityaddress ON (contactaddressbook.addressbookaddress = contactaddressbookentityaddress.nkey)
+WHERE contact.id = 448923

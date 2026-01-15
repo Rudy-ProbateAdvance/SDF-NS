@@ -1,0 +1,90 @@
+with invs as (
+select id
+from transaction
+where tranid='INV11525'
+--select top 100 id, tranid
+--from transaction
+--where recordtype='invoice'
+--and BUILTIN.DF(status) = 'Invoice : Paid In Full'
+--order by id desc
+)
+
+--select invintid, invid, tranid, invamount, recordtype, accountid, accountname, amount
+select  *
+from (
+
+select 
+	inv.id as invintid, 
+	BUILTIN.DF(inv.id) as invid, 
+	inv.foreigntotal as invamount, 
+	t.id, 
+	t.tranid, 
+	tl.linesequencenumber,
+	t.recordtype, 
+	tl.expenseaccount as accountid, 
+	BUILTIN.DF(tl.expenseaccount) as accountname, 
+	tl.foreignamount as amount
+from nexttransactionlinelink ll
+join transaction inv on ll.previousdoc=inv.id
+join transactionline il on il.transaction=inv.id
+join transaction t on t.id=ll.nextdoc
+join transactionline tl on tl.transaction=t.id
+join invs i on i.id = ll.previousdoc
+
+union
+
+select 
+	tl.custcol_invoice as invintid, 
+	BUILTIN.DF(tl.custcol_invoice) as invid, 
+	inv.foreigntotal as invamount, 
+	t.id, 
+	t.tranid, 
+	tl.linesequencenumber,
+	t.recordtype, 
+	tl.expenseaccount as accountid, 
+	BUILTIN.DF(tl.expenseaccount) as accountname, 
+	tl.foreignamount as amount
+from transaction t
+join transactionline tl on tl.transaction=t.id
+join invs i on i.id = tl.custcol_invoice
+join transaction inv on inv.id=i.id
+
+union
+
+select 
+	tl.custcol_invoice_link as invintid, 
+	BUILTIN.DF(tl.custcol_invoice_link) as 
+	invid, inv.foreigntotal as invamount, 
+	t.id, 
+	t.tranid, 
+	tl.linesequencenumber,
+	t.recordtype, 
+	tl.expenseaccount as accountid, 
+	BUILTIN.DF(tl.expenseaccount) as accountname, 
+	tl.foreignamount as amount
+from transaction t
+join transactionline tl on tl.transaction=t.id
+join invs i on i.id = tl.custcol_invoice_link
+join transaction inv on inv.id=i.id
+
+union
+
+select 
+	t.custbody_invoice as invintid, 
+	BUILTIN.DF(t.custbody_invoice) as invid, 
+	inv.foreigntotal as invamount, 
+	t.id, 
+	t.tranid, 
+	tl.linesequencenumber,
+	t.recordtype, 
+	tl.expenseaccount as accountid, 
+	BUILTIN.DF(tl.expenseaccount) as accountname, 
+	tl.foreignamount as amount
+from transaction t 
+join transactionline tl on tl.transaction=t.id
+join invs i on i.id = t.custbody_invoice
+join transaction inv on inv.id=i.id
+)
+order by 
+	id, 
+	linesequencenumber
