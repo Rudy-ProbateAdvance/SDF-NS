@@ -224,9 +224,9 @@ define(['N/encode', 'N/file', 'N/crypto', 'N/ui/serverWidget', 'N/search', 'N/re
           finfo.oldname = line[0];
           finfo.size=line[1];
           finfo.filetype=line[2].replace(/^.*\//,'');
-          finfo.casenum = line[3];
+          finfo.casenum = line[3].trim();
           finfo.ext = finfo.oldname.replace(/^.*\./, '');
-          finfo.name = `AAA-TEST-${state}_${county}_${finfo.casenum}.${finfo.ext}`;
+          finfo.name = `${state}_${county}_${finfo.casenum}.${finfo.ext}`;
           finfo.folderid = 84996;
 
           var filetype=null;

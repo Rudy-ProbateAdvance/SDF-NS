@@ -1,83 +1,134 @@
+function addSublistField(fieldsarray, params) {
+  if (!params.form || !params.sublistId || !params.fieldId || !params.label || !params.type) {
+    throw 'addSublistField: Missing required parameters (form, sublistId, fieldId, label, type)';
+  }
+
+  var sublist = params.form.getSubList(params.sublistId);
+  if (!sublist) {
+    throw 'Invalid sublist ID: ' + params.sublistId;
+  }
+
+  nlapiLogExecution('debug', 'fieldId:'+params.fieldId);
+  var field = sublist.addField(params.fieldId, params.type, params.label);
+
+  // Optional settings
+  if (params.source) {
+    field.setSource(params.source);  // for select fields
+  }
+  if (params.isMandatory) {
+    field.setMandatory(true);
+  }
+  if (params.helpText) {
+    field.setHelpText(params.helpText);
+  }
+  if (params.tab) {
+    field.setTab(params.tab);
+  }
+  if (params.columnWidth) {
+    field.setLayoutType('normal', 'none');
+    field.setDisplaySize(params.columnWidth);
+  }
+
+  if(params.displayType) {
+    field.setDisplayType(params.displayType);
+  }
+
+  // Special handling for URL fields (open in new tab, etc.)
+  if (params.type === 'url') {
+    field.setLinkText(params.label);
+    if (params.openInNewTab !== false) {
+      field.setOpenInNewWindow(true);
+    }
+  }
+
+  // For checkboxes, you might want to default to unchecked
+  if (params.type === 'checkbox' && params.defaultValue !== undefined) {
+    field.setDefaultValue(params.defaultValue ? 'T' : 'F');
+  }
+
+  if(params.type !=='checkbox' && params.defaultValue !== undefined) {
+    field.setDefaultValue(params.defaultValue);
+  }
+
+  if(fieldsarray && Array.isArray(fieldsarray) && params.displayType!='hidden') {
+    fieldsarray.push({id:params.fieldId, label:params.label.replace(/\./g,'')});
+  }
+
+  return field;
+}
+/*
+params:
+
+form
+sublistId
+fieldId
+label
+type
+defaultValue
+source
+isMandatory
+helpText
+tab
+columnWidth
+displayType
+openInNewTab
+*/
+
+
 function Diligence_List(request,response)
 {
 	try{
+    var fields=[];
+    var userid=parseInt(nlapiGetUser());
 		var form = nlapiCreateForm("Diligence List");
 
 		form.setScript("customscript_deal_backlog_cs");
-//		form.addButton( 'custpage_download_csv', 'Download CSV', "onDownload()" );
-		form.addButton( 'custpage_download_csv', 'Download CSV', "csvexport()" );
+		form.addButton( 'custpage_download_csv', 'Download CSV', "onDownload" );
+//		form.addButton( 'custpage_download_csv', 'Download CSV', "csvexport()" );
+
+    var datafld=form.addField('custpage_datastore', 'textarea', 'Data').setDisplayType('hidden');
 
 		var list = form.addSubList("custpage_deals","list","Deals");
 
 		var fld = list.addField("custpage_customer_internalid","text","Customer Internal ID");
 		fld.setDisplayType("hidden");
 
-		fld = list.addField("custpage_estate_internalid","text","Estate Internal ID");
-		fld.setDisplayType("hidden");
-		fld = list.addField("custpage_decedent_name_text","text","Decedent Name");
-		fld.setDisplayType("hidden");
-		fld = list.addField("custpage_decedent_name","text","Decedent Name....................................");
-		fld.setDisplaySize(75);
-        var userid=parseInt(nlapiGetUser());
-      
-        fld = list.addField("custpage_pm_assignee", "text", "Portfolio Management Assignee");
-        
-
-		fld = list.addField("custpage_total_assignment","currency","Total Assignment");
-		fld.setDisplaySize(75);
-
-		fld = list.addField("custpage_est_date_of_distr","date","Est Date of Distr");
-		fld.setDisplaySize(50);
-        fld = list.addField("custpage_invoice_list_text","textarea","List of Invoices");
-		fld.setDisplaySize(75);
-		fld.setDisplayType("hidden");
-        fld = list.addField("custpage_invoice_list","textarea","List of Invoices...............................................................");
-		fld.setDisplaySize(75);
-        fld = list.addField("custpage_invoice_list_of","textarea","List of Invoices (overflow).....................................................");
-		fld.setDisplaySize(75);
-
-		//fld = list.addField("custpage_stamped_assignment", "text", "Stamped assignment");
-
-		fld = list.addField("custpage_county","text","County");
-		fld.setDisplaySize(75);
-
-		fld = list.addField("custpage_last_phone_date","date","Last Phone Call Date");
-		fld.setDisplaySize(75);
-
-		fld = list.addField("custpage_last_phone_subject","text","Subject....................");
-		fld.setDisplaySize(75);
-
-		fld = list.addField("custpage_last_phone_message","textarea","Message");
-		fld.setDisplaySize(75);
-
-		fld = list.addField("custpage_next_event_date","date","Next Event Date");
-		fld.setDisplaySize(75);
-
-		fld = list.addField("custpage_next_event_subject","text","Subject............................................");
-		fld.setDisplaySize(75);
-
-		fld = list.addField("custpage_estate_status_part", "textarea", "Estate Status");
-		fld.setDisplaySize(75);
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_estate_internalid', label:'Estate Internal ID', type:'text', displayType:'hidden'});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_decedent_name_text', label:'Decedent Name', type:'text', displayType:'hidden'});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_decedent_name', label:'Decedent Name..................................................', type:'text', columnWidth:100});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_total_assignment', label:'Total Assignment', type:'currency', displaySize:75});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_est_date_of_distr', label:'Est Date of Distr', type:'date', displaySize:50});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_invoice_list_text', label:'List of Invoices', type:'textarea', displaySize:75, displayType:'hidden'});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_invoice_list', label:'List of Invoices...............................................................', type:'textarea', displaySize:75});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_invoice_list_of', label:'List of Invoices (overflow).....................................................', type:'textarea', displaySize:75});
+    //fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_stamped_assignment', label:'Stamped assignment', type:'text', displaySize:75});
+		fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_county', label:'County', type:'text', displaySize:75});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_last_phone_date', label:'Last Phone Call Date', type:'date', displaySize:75});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_last_phone_subject', label:'Subject....................', type:'text', displaySize:75});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_last_phone_message', label:'Message', type:'textarea', displaySize:75});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_next_event_date', label:'Next Event Date', type:'date', displaySize:75});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_next_event_subject', label:'Next Event Subject............................................', type:'text', displaySize:75});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_estate_status_part', label:'Estate Status', type:'textarea', displaySize:75});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_last_phone_message_author', label:'Last Phone Message Author', type:'text'});
 
 		////// New Fields //////////
 
-		fld = list.addField("custpage_dot", "text", "DOT");
-		fld = list.addField("custpage_escrow", "text", "Escrow");
-		fld = list.addField("custpage_lispendens", "text", "Lis Pendens");
-		fld = list.addField("custpage_moi", "text", "MOI");
-		fld = list.addField("custpage_blocked_account", "text", "BLOCKED ACCOUNT LETTER");
-		fld = list.addField("custpage_signed_blocked_account", "text", "Signed Blocked Account");
-		fld = list.addField("custpage_obtained_blocked_account", "text", "Obtained Blocked Account");
-		fld = list.addField("custpage_problem_case", "text", "PROBLEM CASE");
-//	fld = list.addField("custpage_expected_rebate", "text", "EXPECTED REBATE");
-		fld = list.addField("custpage_last_phone_message_author", "text", "Last Message Author");
-		fld = list.addField("custpage_county_court_url", "text", "Court URL");
+		fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_dot', label:'DOT', type:'text'});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_escrow', label:'Escrow', type:'text'});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_lispendens', label:'Lis Pendens', type:'text'});
+		fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_moi', label:'MOI', type:'text'});
+		fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_blocked_account', label:'BLOCKED ACCOUNT LETTER', type:'text'});
+		fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_signed_blocked_account', label:'Signed Blocked Account', type:'text'});
+		fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_obtained_blocked_account', label:'Obtained Blocked Account', type:'text'});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_problem_case', label:'PROBLEM CASE', type:'text'});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_county_court_url', label:'Court URL', type:'text'});
 //  fld = list.addField("custpage_stamped_assignment", "text", "Stamped assignment");
-        var fld = list.addField("custpage_expected_rebate", "textarea", "Expected Rebate................................................................");
-		fld.setDisplaySize(75);
+//  fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_stamped_assignment', label:'Stamped assignment', type:'text'});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_expected_rebate', label:'Expected Rebate................................................................', type:'textarea', displaySize:75});
+    fld = addSublistField(fields, {form:form, sublistId:'custpage_deals', fieldId:'custpage_pm_assignee', label:'Portfolio Management Assignee', type:'text'});
 
 		var estateIds = [];
-        var customerIds = [];
+    var customerIds = [];
 
 		var data = [];
 
@@ -429,14 +480,13 @@ function Diligence_List(request,response)
 
 			sublistData.push({
 				custpage_decedent_name_text:data[x].decedent_name,
-                custpage_pm_assignee:data[x].pm_assignee,
 				custpage_decedent_name : "<a href='/app/site/hosting/scriptlet.nl?script=180&deploy=1&estate=" + data[x].estateId + "&native=T' target='_blank'>" + data[x].decedent_name + "</a>",
 //				custpage_decedent_name : "<a href='/app/site/hosting/scriptlet.nl?script=180&deploy=1&compid=5295340&estate=" + data[x].estateId + "&native=T' target='_blank'>" + data[x].decedent_name + "</a>",
 				custpage_county : data[x].county,
 				custpage_invoice_list_text:data[x].invoice_link_text,
 				//custpage_invoice_list : data[x].invoice_link,
-                custpage_invoice_list : invLink,
-                custpage_invoice_list_of : invLinkOverflow,
+        custpage_invoice_list : invLink,
+        custpage_invoice_list_of : invLinkOverflow,
 				custpage_total_assignment : data[x].invoice_total,
 				custpage_last_phone_date : data[x].last_phone_call_date,
 				custpage_last_phone_subject : data[x].last_phone_call_subject,
@@ -457,19 +507,21 @@ function Diligence_List(request,response)
 //			custpage_expected_rebate : data[x].expected_rebate,
 				custpage_last_phone_message_author : data[x].last_phone_call_author,
 				custpage_county_court_url : data[x].county_court_url,
-                custpage_expected_rebate : rebatedata[data[x].estateId].join('\n'),
+        custpage_expected_rebate : rebatedata[data[x].estateId].join('\n'),
+        custpage_pm_assignee:data[x].pm_assignee,
 
 				//custpage_estate_status_part : data[x].invoice_estate
 			});
 		}
 
+    datafld.setDefaultValue(JSON.stringify(fields));
 		list.setLineItemValues(sublistData);
 
 		response.writePage(form);
 	}
 	catch(e)
 	{
-		nlapiLogExecution('debug','Error',e)
+		nlapiLogExecution('debug','Error',JSON.stringify(e));
 	}
 }
 

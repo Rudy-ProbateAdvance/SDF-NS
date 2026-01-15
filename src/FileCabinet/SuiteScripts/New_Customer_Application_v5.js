@@ -1,3 +1,10 @@
+function isempty(val) {
+  if(val == null || val.toString().trim() == "")
+    return true
+  else
+    return false;
+}
+
 function New_Customer_Application(request, response) {
   if (request.getMethod() == "GET") {
     try {
@@ -1117,7 +1124,7 @@ function New_Customer_Application(request, response) {
         if (customer != null && customer.getFieldValue("custentity_pricing_level") != null && customer.getFieldValue("custentity_pricing_level") != "")
           fld.setDefaultValue(customer.getFieldValue("custentity_pricing_level"));
         else
-          fld.setDefaultValue("5");//3
+          fld.setDefaultValue("7");//3
 
         fld = form.addField("custpage_months_remaining", "float", "Guess of Months Remaining", null, "pricing");
         fld.setLayoutType("startrow", "none");
@@ -1133,8 +1140,10 @@ function New_Customer_Application(request, response) {
         fld.addSelectOption("12", "12", false);
         fld.addSelectOption("18", "18", false);
         fld.addSelectOption("24", "24", false);
-        if (customer != null && customer.getFieldValue("custentity_early_rebate_option_1") != null && customer.getFieldValue("custentity_early_rebate_option_1") != "")
+        if (customer!=null && !isempty(customer.getFieldValue("custentity_early_rebate_option_1")))
           fld.setDefaultValue(customer.getFieldValue("custentity_early_rebate_option_1"));
+        else
+          fld.setDefaultValue("3");
 
         fld = form.addField("custpage_early_rebate_2", "select", "Early Rebate Option 2 (Months)", null, "pricing");
         fld.addSelectOption("", "", true);
@@ -1144,8 +1153,9 @@ function New_Customer_Application(request, response) {
         fld.addSelectOption("12", "12", false);
         fld.addSelectOption("18", "18", false);
         fld.addSelectOption("24", "24", false);
-        if (customer != null && customer.getFieldValue("custentity_early_rebate_option_2") != null && customer.getFieldValue("custentity_early_rebate_option_2") != "")
+        if (customer!=null  && !isempty(customer.getFieldValue("custentity_early_rebate_option_2")))
           fld.setDefaultValue(customer.getFieldValue("custentity_early_rebate_option_2"));
+        else fld.setDefaultValue("9");
 
         fld = form.addField("custpage_early_rebate_3", "select", "Early Rebate Option 3 (Months)", null, "pricing");
         fld.addSelectOption("", "", true);
@@ -1155,16 +1165,24 @@ function New_Customer_Application(request, response) {
         fld.addSelectOption("12", "12", false);
         fld.addSelectOption("18", "18", false);
         fld.addSelectOption("24", "24", false);
-        if (customer != null && customer.getFieldValue("custentity_early_rebate_option_3") != null && customer.getFieldValue("custentity_early_rebate_option_3") != "")
+        if (customer!=null && !isempty(customer.getFieldValue("custentity_early_rebate_option_3")))
           fld.setDefaultValue(customer.getFieldValue("custentity_early_rebate_option_3"));
+        else
+          fld.setDefaultValue("");
 
         fld = form.addField("custpage_assignment_size", "integer", "Assignment Size", null, "pricing");
         fld.setLayoutType("startrow", "none");
 
         fld = form.addField("custpage_early_rebate_1_amt", "integer", "Option 1 Pricing", null, "pricing");
         fld.setLayoutType("normal", "startcol");
+//        fld = form.addField("custpage_multiplier_1", "text", "Option 1 Multiplier", null, "pricing");
+//        fld.setDisplayType("inline");
         fld = form.addField("custpage_early_rebate_2_amt", "integer", "Option 2 Pricing", null, "pricing");
+//        fld = form.addField("custpage_multiplier_2", "text", "Option 1 Multiplier", null, "pricing");
+//        fld.setDisplayType("inline");
         fld = form.addField("custpage_early_rebate_3_amt", "integer", "Option 3 Pricing", null, "pricing");
+//        fld = form.addField("custpage_multiplier_3", "text", "Option 1 Multiplier", null, "pricing");
+//        fld.setDisplayType("inline");
 
         //Get quote button
         var fld = form.addField("custpage_get_quote", "inlinehtml", "Get Quote", null, "pricing");

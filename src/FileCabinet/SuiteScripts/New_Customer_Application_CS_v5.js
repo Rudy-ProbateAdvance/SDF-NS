@@ -1,3 +1,10 @@
+function isempty(val) {
+  if(val == null || val.toString().trim() == "")
+    return true;
+  else
+    return false;
+}
+
 // noinspection JSVoidFunctionReturnValueUsed
 //jQuery(document).ready(alert("document.ready"));
 //document.addEventListener("DOMContentLoaded", function(event){
@@ -98,6 +105,7 @@ function New_Cust_App_CS_PI() {
 }
 
 function New_Cust_App_CS_FC(type, name, linenum) {
+//  debugger;
   try {
   if(window.hasOwnProperty('inactivitytimerid')) {
     console.log('hasBeenActive', navigator.userActivation.hasBeenActive, 'ischanged', window.ischanged, 'timer id', window.inactivitytimerid);
@@ -299,11 +307,40 @@ function New_Cust_App_CS_FC(type, name, linenum) {
       calculateMaxAdvance();
     } else if (name == "custpage_price_level" || name == "custpage_desired_advance" || name == "custpage_early_rebate_1" || name == "custpage_early_rebate_2" || name == "custpage_early_rebate_3") {
       var pricelvl = nlapiGetFieldValue("custpage_price_level");
-      if (name == "custpage_price_level" && pricelvl == 6) {
+      if (name == "custpage_price_level") {
+        debugger;
+        switch(pricelvl) {
+          case "1":
+            break;
+          case "2":
+            break;
+          case "3":
+            break;
+          case "4":
+            break;
+          case "5": //Standard 3/6/9
+            nlapiSetFieldValue("custpage_months_remaining", 18);
+            nlapiSetFieldValue("custpage_early_rebate_1", "3");
+            nlapiSetFieldValue("custpage_early_rebate_2", "6");
+            nlapiSetFieldValue("custpage_early_rebate_3", "9");
+            break;
+          case "6": //Quick 5k
+            nlapiSetFieldValue("custpage_desired_advance", 5000);
+            nlapiSetFieldValue("custpage_assignment_size", 9900);
+            nlapiSetFieldValue("custpage_months_remaining", 18);
+            nlapiSetFieldValue("custpage_early_rebate_1", "");
+            nlapiSetFieldValue("custpage_early_rebate_2", "");
+            nlapiSetFieldValue("custpage_early_rebate_3", "");
+            break;
+          case "7": //Standard 3/9
+            nlapiSetFieldValue("custpage_months_remaining", 18);
+            nlapiSetFieldValue("custpage_early_rebate_1", "3");
+            nlapiSetFieldValue("custpage_early_rebate_2", "9");
+            nlapiSetFieldValue("custpage_early_rebate_3", "");
+            break;
+        }
 //        debugger;
 //        window.suppressfieldchangedfunction=true;
-        nlapiSetFieldValue("custpage_desired_advance", 5000);
-        nlapiSetFieldValue("custpage_months_remaining", 18);
 //        nlapiSetFieldValue("custpage_early_rebate_1", "");
 //        nlapiSetFieldValue("custpage_early_rebate_2", "");
 //        nlapiSetFieldValue("custpage_early_rebate_3", "");
@@ -329,6 +366,7 @@ function New_Cust_App_CS_FC(type, name, linenum) {
       }
 
       calculatePrice();
+      clearchanged();
     } else if (name == "custpage_estate_state") {
       calculateMonths();
       console.log("Calc'd number of months...");
@@ -338,7 +376,7 @@ function New_Cust_App_CS_FC(type, name, linenum) {
 
 
     } else if (name == 'custpage_pm_assignee') {
-      debugger;
+//      debugger;
       var estateId = nlapiGetFieldValue("custpage_estate");
       var val=nlapiGetFieldValue('custpage_pm_assignee');
       if(val=='undefined')
@@ -570,7 +608,7 @@ function New_Cust_App_CS_FC(type, name, linenum) {
       }
 
       if(name == "custpage_case_no") {
-        debugger;
+//        debugger;
         casenum=nlapiGetFieldValue("custpage_case_no");
         county=nlapiGetFieldValue("custpage_estate_county");
         if(county!='' && county!=null)
@@ -1483,47 +1521,86 @@ function calculateSensitivity() {
   nlapiSetFieldValue("custpage_sensitivity_to_10percent", roundedsens + "% ($" + netdue10 + ")");
 }
 
+function calculateProfit(months, advance) {
+//    debugger;
+  var multiplier;
+  var minprofit;
+  switch(parseInt(months)) {
+    case 3:
+      multiplier=1.35;
+      minprofit=0;
+      break;
+    case 6:
+      multiplier=1.5;
+      minprofit=6000;
+      break;
+    case 9:
+      multiplier=1.75;
+      minprofit=9000;
+      break;
+    case 12:
+      multiplier=1.9;
+      minprofit=12000;
+      break;
+    case 15:
+      multiplier=1.95;
+      minprofit=15000;
+    default:
+      if (months >= 18) {
+        multiplier = 2;
+        minprofit = 0;
+      }
+  }
+  var amount=((advance*multiplier<advance+minprofit) ? (advance+minprofit) : (advance*multiplier));
+  if(amount>2*advance)
+    amount=2*advance;
+  return Math.round(amount);
+}
+
 function calculatePrice() {
+  debugger;
   var priceLevel = nlapiGetFieldValue("custpage_price_level");
   var numMonths = nlapiGetFieldValue("custpage_months_remaining");
   var advance = parseFloat(nlapiGetFieldValue("custpage_desired_advance"));
   if (priceLevel == 6) {
-    nlapiSetFieldValue("custpage_early_rebate_1", "", false, true);
-    nlapiSetFieldValue("custpage_early_rebate_2", "", false, true);
-    nlapiSetFieldValue("custpage_early_rebate_3", "", false, true);
-    nlapiSetFieldValue("custpage_assignment_size", 9900);
-    nlapiSetFieldValue("custpage_early_rebate_1_amt", "", false, true);
-    nlapiSetFieldValue("custpage_early_rebate_2_amt", "", false, true);
-    nlapiSetFieldValue("custpage_early_rebate_3_amt", "", false, true);
-  } else if (priceLevel == 5) { //LEVEL 5 Starting
-    var assignment_size = advance * 2;
-    nlapiSetFieldValue("custpage_assignment_size", assignment_size, true, true);
-    nlapiSetFieldValue("custpage_early_rebate_1", 3, false, true);
-    nlapiSetFieldValue("custpage_early_rebate_2", 6, false, true);
-    nlapiSetFieldValue("custpage_early_rebate_3", 9, false, true);
-    var rebate_1_amt;
-    var rebate_2_amt;
-    var rebate_3_amt;
-    var amt1 = ((advance * (1 + 0.35)) < (advance + 3000)) ? (advance + 3000) : (advance * (1 + 0.35));
-    var amt2 = ((advance * (1 + 0.50)) < (advance + 6000)) ? (advance + 6000) : (advance * (1 + 0.50));
-    var amt3 = ((advance * (1 + 0.75)) < (advance + 9000)) ? (advance + 9000) : (advance * (1 + 0.75));
-    var rebate_1_amt = (amt1 > assignment_size) ? assignment_size : amt1;
-    var rebate_2_amt = (amt2 > assignment_size) ? assignment_size : amt2;
-    var rebate_3_amt = (amt3 > assignment_size) ? assignment_size : amt3;
-    console.log('rebate_1_amt' + rebate_1_amt);
-    if (rebate_1_amt)
-      nlapiSetFieldValue("custpage_early_rebate_1_amt", rebate_1_amt, false, true);
-    if (rebate_2_amt)
-      nlapiSetFieldValue("custpage_early_rebate_2_amt", rebate_2_amt, false, true);
-    if (rebate_3_amt)
-      nlapiSetFieldValue("custpage_early_rebate_3_amt", rebate_3_amt, false, true);
+    if (!isempty(priceLevel) && !isempty(numMonths) && !isempty(advance)) {
 
-  } else { //Level 5 Ending
-    if (priceLevel != null && priceLevel != "" && numMonths != null && numMonths != "" && advance != null && advance != "") {
+      nlapiSetFieldValue("custpage_early_rebate_1", "", false, true);
+      nlapiSetFieldValue("custpage_early_rebate_2", "", false, true);
+      nlapiSetFieldValue("custpage_early_rebate_3", "", false, true);
+      nlapiSetFieldValue("custpage_assignment_size", 9900);
+      nlapiSetFieldValue("custpage_early_rebate_1_amt", "", false, true);
+      nlapiSetFieldValue("custpage_early_rebate_2_amt", "", false, true);
+      nlapiSetFieldValue("custpage_early_rebate_3_amt", "", false, true);
+    }
+  } else if (priceLevel == 5 || priceLevel == 7) { //LEVEL 5 3/6/9
+    if (!isempty(priceLevel) && !isempty(numMonths) && !isempty(advance)) {
+      var assignment_size = advance * 2;
+      nlapiSetFieldValue("custpage_assignment_size", assignment_size, true, true);
+
+      var months1=nlapiGetFieldValue('custpage_early_rebate_1');
+      var months2=nlapiGetFieldValue('custpage_early_rebate_2');
+      var months3=nlapiGetFieldValue('custpage_early_rebate_3');
+
+      var price1=isempty(months1)?"":calculateProfit(months1, advance);
+      var price2=isempty(months2)?"":calculateProfit(months2, advance);
+      var price3=isempty(months3)?"":calculateProfit(months3, advance);
+
+//      if (rebate_1_amt)
+      nlapiSetFieldValue("custpage_early_rebate_1_amt", price1, false, true);
+//      if (rebate_2_amt)
+      nlapiSetFieldValue("custpage_early_rebate_2_amt", price2, false, true);
+//      if (rebate_3_amt)
+      nlapiSetFieldValue("custpage_early_rebate_3_amt", price3, false, true);
+      //Level 5 Ending
+    }
+  } else {
+//    debugger;
+    if (!isempty(priceLevel) && !isempty(numMonths) && !isempty(advance)) {
       var priceStructure = nlapiLookupField("customrecord_price_option", priceLevel, ["custrecord_fee_minimum", "custrecord_fee_percent", "custrecord_fee_return"]);
 
-      var fee = advance * (parseFloat(priceStructure.custrecord_fee_percent) / 100);
-      if (fee < parseFloat(priceStructure.custrecord_fee_minimum))
+      var fee = advance * (parseFloat(priceStructure.custrecord_fee_percent||0) / 100);
+      if (fee < parseFloat(priceStructure.custrecord_fee_minimum||0))
         fee = priceStructure.custrecord_fee_minimum;
       fee = parseFloat(fee);
 
@@ -1545,9 +1622,9 @@ function calculatePrice() {
 
       var rebateAdvance = advance + 3000;
 
-      var rebateOption1Months = parseInt(nlapiGetFieldValue("custpage_early_rebate_1"));
-      var rebateOption2Months = parseInt(nlapiGetFieldValue("custpage_early_rebate_2"));
-      var rebateOption3Months = parseInt(nlapiGetFieldValue("custpage_early_rebate_3"));
+      var rebateOption1Months = parseInt(nlapiGetFieldValue("custpage_early_rebate_1")||null);
+      var rebateOption2Months = parseInt(nlapiGetFieldValue("custpage_early_rebate_2")||null);
+      var rebateOption3Months = parseInt(nlapiGetFieldValue("custpage_early_rebate_3")||null);
 
       if (rebateOption2Months == null || rebateOption2Months == "" || isNaN(rebateOption2Months))
         rebateOption2Months = 0;
@@ -1582,14 +1659,20 @@ function calculatePrice() {
         var rebateOption3 = FV((rateOfReturn + 0.025), (rebateOption3Months / 12), 0, (advance + fee), 0) * -1;
         if (rebateOption3 < rebateAdvance)
           rebateOption3 = rebateAdvance;
+      } else {
+        rebateOption3 = 0;
       }
 
       if (nlapiGetFieldValue("custpage_early_rebate_1") != null && nlapiGetFieldValue("custpage_early_rebate_1") != "")
         nlapiSetFieldValue("custpage_early_rebate_1_amt", Math.ceil(rebateOption1 / 100) * 100, true, true);
-      if (nlapiGetFieldValue("custpage_early_rebate_2") != null && nlapiGetFieldValue("custpage_early_rebate_2") != "")
+      if (!isempty(nlapiGetFieldValue("custpage_early_rebate_2")))
         nlapiSetFieldValue("custpage_early_rebate_2_amt", Math.ceil(rebateOption2 / 100) * 100, true, true);
-      if (nlapiGetFieldValue("custpage_early_rebate_3") != null && nlapiGetFieldValue("custpage_early_rebate_3") != "")
+      else
+        nlapiSetFieldValue("custpage_early_rebate_2_amt", "");
+      if (!isempty(nlapiGetFieldValue("custpage_early_rebate_3")))
         nlapiSetFieldValue("custpage_early_rebate_3_amt", Math.ceil(rebateOption3 / 100) * 100, true, true);
+      else
+        nlapiSetFieldValue("custpage_early_rebate_3_amt", "");
     }
   }
 }
@@ -3686,13 +3769,17 @@ function saveall() {
   }
   if(customerId) {
     console.log(custupdatefields,custupdatevalues);
+    nlapiLogExecution("debug", custupdatefields,custupdatevalues);
     nlapiSubmitField("customer", customerId, custupdatefields, custupdatevalues);
     console.log("updated customer",customerId);
+    nlapiLogExecution("debug", "updated customer",customerId);
   }
   if(estateId){
     console.log(estupdatefields,estupdatevalues);
+    nlapiLogExecution("debug", estupdatefields,estupdatevalues);
     nlapiSubmitField("customer", estateId, estupdatefields, estupdatevalues);
     console.log("updated estate",estateId);
+    nlapiLogExecution("debug", "updated estate",estateId);
   }
   var d=new Date();
   var endtime=parseFloat(d.getSeconds()+'.'+d.getMilliseconds());
@@ -3820,7 +3907,6 @@ function stateToAbbrev(statename) {
     'michigan':'MI',
     'mi':'Michigan',
     'minnesota':'MN',
-    
     'mn':'Minnesota',
     'mississippi':'MS',
     'ms':'Mississippi',

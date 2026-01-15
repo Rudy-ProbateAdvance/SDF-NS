@@ -129,6 +129,7 @@ define(['N/https', 'N/record', 'N/search', 'N/runtime', 'N/email', 'N/file'], fu
         customer.setValue({fieldId:"custentity_device", value:formatNull(datain.device)});
         customer.setValue({fieldId:"custentity_matchtype", value:formatNull(datain.matchtype)});
         customer.setValue({fieldId:"custentity_sourceurl", value:formatNull(datain.sourceurl)});
+        customer.setValue({fieldId:"custentity_msclkid", value:formatNull(datain.msclkid)});
         customer.setValue({fieldId:"leadsource", value:campaign});
         customer.setValue({fieldId:"parent", value:estateId});
         customer.setValue({fieldId:"custentity_source", value:'web services'});

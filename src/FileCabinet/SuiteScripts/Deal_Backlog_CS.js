@@ -138,8 +138,10 @@ function Deal_Backlog_CS_FC(type,name,linenum)
 }
 
 
+/*
 function onDownload(){
-	var lineCount = nlapiGetLineItemCount("custpage_deals");
+  var columns=JSON.parse(nlapiGetFieldValue('custpage_datastore'));
+  var lineCount = nlapiGetLineItemCount("custpage_deals");
     if (lineCount > 0) {
     	var xmlString = 'Decedent Name,Total Assignment,Est Date of Distr,LIST OF INVOICES,COUNTY,LAST PHONE CALL DATE,SUBJECT,MESSAGE,NEXT EVENT DATE,SUBJECT,ESTATE STATUS,Dot,ESCROW,BLOCKED ACCOUNT LETTER,PROBLEM CASE\n'; 
     	var content=[];
@@ -195,6 +197,75 @@ function onDownload(){
     element.click();
     document.body.removeChild(element);
 }
+*/
+function onDownload(){
+  debugger;
+  var columns=JSON.parse(nlapiGetFieldValue('custpage_datastore'));
+  var fieldids=[];
+  console.log(columns);
+  var lineCount = nlapiGetLineItemCount("custpage_deals");
+  if (lineCount > 0) {
+//    var xmlString = 'Decedent Name,Total Assignment,Est Date of Distr,LIST OF INVOICES,COUNTY,LAST PHONE CALL DATE,SUBJECT,MESSAGE,NEXT EVENT DATE,SUBJECT,ESTATE STATUS,Dot,ESCROW,BLOCKED ACCOUNT LETTER,PROBLEM CASE\n';
+    var xmlString = '';
+    var len=columns.length;
+    for(var z=0; z<len; z++) {
+      if(columns[z].id!='custpage_invoice_list_of') {
+        if(columns[z].id=='custpage_decedent_name') {
+          fieldids.push('custpage_decedent_name_text');
+        } else {
+          fieldids.push(columns[z].id);
+        }
+        xmlString+=columns[z].label;
+        if(len-z>1) {
+          xmlString+=',';
+        }
+      }
+    }
+    xmlString+='\n';
+    var content=[];
+    for (var line = 1; line <= lineCount; line++) {
+      var invoice_list=nlapiGetLineItemValue("custpage_deals", "custpage_invoice_list_text", line);
+      const strCopy = invoice_list.split(',');
+      for (var index = 0; index < strCopy.length; index++) {
+        var row = [];
+        for(var z=0; z<fieldids.length; z++) {
+          row.push(nlapiGetLineItemValue("custpage_deals", fieldids[z], line));
+        }
+        var r=row.slice(0,3);
+        r.push(strCopy[index]);
+        r=r.concat(row.slice(4));
+
+        content.push(r);
+      }
+
+    }
+  }
+  var  finalVal='';
+  for (var i = 0; i < content.length; i++) {
+    var value = content[i];
+    for (var j = 0; j < value.length; j++) {
+      var innerValue =  value[j]===null?'':value[j].toString();
+      var result = innerValue.replace(/"/g, '""');
+      if (result.search(/("|,|\n)/g) >= 0)
+        result = '"' + result + '"';
+      if (j > 0)
+        finalVal += ',';
+      finalVal += result;
+    }
+
+    finalVal += '\n';
+  }
+  xmlString+=finalVal;
+  var element = document.createElement('a');
+  element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(xmlString));
+  element.setAttribute('download', "Diligence List Report.csv");
+  element.style.display = 'none';
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
+}
+
+
 
 /***************************************************************************/
   function getDateTime(date) {
